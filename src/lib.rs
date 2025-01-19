@@ -31,7 +31,13 @@ enum Cell {
     PlayerTwo,
 }
 
-/// Field are enumerated 0..9. Top left is zero. Bottom right is nine.
+/// Field are enumerated 0..=8. Top left is zero. Bottom right is 8.
+/// 
+/// ```
+/// 0 1 2
+/// 3 4 5
+/// 6 7 8
+/// ```
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct CellIndex(u8);
 
@@ -95,7 +101,7 @@ impl TicTacToe {
         }
     }
 
-    /// Places a stone for the current player in the specified Cell
+    /// Places a stone for the current player in the specified Cell. Panics if cell is not empty
     pub fn play_move(&mut self, &mov: &CellIndex) {
         assert!(self.0.field(mov) == Cell::Empty);
         let new_state = match self.state() {

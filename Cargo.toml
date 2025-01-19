@@ -2,5 +2,7 @@
 name = "tic-tac-toe-board"
 version = "0.1.0"
 edition = "2021"
+description = "A tic-tac-toe board efficiently implemented as a 32Bit integer."
+license = "MIT"
 
 [dependencies]

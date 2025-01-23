@@ -1,53 +1,8 @@
 use std::{fmt, io};
 
-/// Bitboard stones
-///
-/// First 12 Bits encode stones of player one. Every fourth bit is zero
-///  0   1   2  .
-///  4   5   6  .
-///  8   0  10  .
-///  .   .   .  . Four bits of padding between players
-///  Next 12 Bits encode stones of player two.
-///  16 17 18  .
-///  19 20 21  .
-///  22 23 24  .
-///   .  .  .  .
-/// `1` represents a stone of one player. `0` is an empty field, or a stone of the other player.
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Default)]
-struct Bitboard(u32);
-
 /// A TacTacToe board
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Default)]
 pub struct TicTacToe(Bitboard);
-
-/// State of a cell in a TicTacToe Board
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-enum Cell {
-    /// Field is not captured by either player
-    Empty,
-    /// Field contains a stone from Player 1
-    PlayerOne,
-    /// Field contains a stone from Player 1
-    PlayerTwo,
-}
-
-/// Field are enumerated 0..=8. Top left is zero. Bottom right is 8.
-/// 
-/// ```
-/// 0 1 2
-/// 3 4 5
-/// 6 7 8
-/// ```
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct CellIndex(u8);
-
-pub enum TicTacToeState {
-    VictoryPlayerOne,
-    VictoryPlayerTwo,
-    Draw,
-    TurnPlayerOne,
-    TurnPlayerTwo,
-}
 
 impl TicTacToe {
     pub fn new() -> TicTacToe {
@@ -78,7 +33,8 @@ impl TicTacToe {
         )
     }
 
-    pub fn legal_moves(& self) -> impl Iterator<Item = CellIndex> + use<'_> {
+    /// Iterator over all fields which are not occupied by a stone of either player
+    pub fn open_fields(&self) -> impl Iterator<Item = CellIndex> + use<'_> {
         (0..9)
             .map(CellIndex)
             .filter(move |&i| self.0.field(i) == Cell::Empty)
@@ -112,6 +68,22 @@ impl TicTacToe {
         self.0.mark_cell(mov, new_state);
     }
 }
+
+/// Bitboard stones
+///
+/// First 12 Bits encode stones of player one. Every fourth bit is zero
+///  0   1   2  .
+///  4   5   6  .
+///  8   0  10  .
+///  .   .   .  . Four bits of padding between players
+///  Next 12 Bits encode stones of player two.
+///  16 17 18  .
+///  19 20 21  .
+///  22 23 24  .
+///   .  .  .  .
+/// `1` represents a stone of one player. `0` is an empty field, or a stone of the other player.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Default)]
+struct Bitboard(u32);
 
 impl Bitboard {
     /// An empty Tic Tac Toe board
@@ -156,6 +128,59 @@ impl Bitboard {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum TicTacToeState {
+    VictoryPlayerOne,
+    VictoryPlayerTwo,
+    Draw,
+    TurnPlayerOne,
+    TurnPlayerTwo,
+}
+
+impl TicTacToeState {
+    /// `true` if the game is finished, `false` if it is still ongoing
+    pub fn is_terminal(self) -> bool {
+        match self {
+            TicTacToeState::VictoryPlayerOne
+            | TicTacToeState::VictoryPlayerTwo
+            | TicTacToeState::Draw => true,
+            TicTacToeState::TurnPlayerOne | Self::TurnPlayerTwo => false,
+        }
+    }
+}
+
+/// State of a cell in a TicTacToe Board
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Cell {
+    /// Field is not captured by either player
+    Empty,
+    /// Field contains a stone from Player 1
+    PlayerOne,
+    /// Field contains a stone from Player 1
+    PlayerTwo,
+}
+
+impl fmt::Display for Cell {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let c = match self {
+            Cell::Empty => " ",
+            Cell::PlayerOne => "X",
+            Cell::PlayerTwo => "O",
+        };
+        write!(f, "{}", c)
+    }
+}
+
+/// Field are enumerated 0..=8. Top left is zero. Bottom right is 8.
+///
+/// ```
+/// 0 1 2
+/// 3 4 5
+/// 6 7 8
+/// ```
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct CellIndex(u8);
+
 impl CellIndex {
     fn row(self) -> u8 {
         self.0 / 3
@@ -180,17 +205,6 @@ impl std::str::FromStr for CellIndex {
 impl fmt::Display for CellIndex {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "cell index: {}", self.0)
-    }
-}
-
-impl fmt::Display for Cell {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let c = match self {
-            Cell::Empty => " ",
-            Cell::PlayerOne => "X",
-            Cell::PlayerTwo => "O",
-        };
-        write!(f, "{}", c)
     }
 }
 

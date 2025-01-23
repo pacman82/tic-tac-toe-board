@@ -1,3 +1,6 @@
+mod bitboard;
+
+use bitboard::Bitboard;
 use std::{fmt, io};
 
 /// A TacTacToe board
@@ -44,8 +47,8 @@ impl TicTacToe {
         let stones = self.0.stones();
         let player = stones % 2;
         match (self.0.victory(), player) {
-            (true, 0) => TicTacToeState::VictoryPlayerOne,
-            (true, 1) => TicTacToeState::VictoryPlayerTwo,
+            (true, 0) => TicTacToeState::VictoryPlayerTwo,
+            (true, 1) => TicTacToeState::VictoryPlayerOne,
             (false, 0) => TicTacToeState::TurnPlayerOne,
             _ => {
                 if stones == 9 {
@@ -66,65 +69,6 @@ impl TicTacToe {
             _ => panic!("Tic Tac Toe game is already finished."),
         };
         self.0.mark_cell(mov, new_state);
-    }
-}
-
-/// Bitboard stones
-///
-/// First 12 Bits encode stones of player one. Every fourth bit is zero
-///  0   1   2  .
-///  4   5   6  .
-///  8   0  10  .
-///  .   .   .  . Four bits of padding between players
-///  Next 12 Bits encode stones of player two.
-///  16 17 18  .
-///  19 20 21  .
-///  22 23 24  .
-///   .  .  .  .
-/// `1` represents a stone of one player. `0` is an empty field, or a stone of the other player.
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Default)]
-struct Bitboard(u32);
-
-impl Bitboard {
-    /// An empty Tic Tac Toe board
-    fn new() -> Bitboard {
-        Bitboard(0)
-    }
-
-    /// Mark field at index with a stone for a player. Does not perform any checks.
-    fn mark_cell(&mut self, index: CellIndex, new_state: Cell) {
-        // A bitmask which is one at the cell we want to change.
-        let bitmask_cell = 1 << (index.row() * (3 + 1) + index.column());
-        match new_state {
-            Cell::PlayerOne => self.0 |= bitmask_cell,
-            Cell::PlayerTwo => self.0 |= bitmask_cell << 16,
-            Cell::Empty => self.0 &= !(bitmask_cell | (bitmask_cell << 16)),
-        }
-    }
-
-    fn field(self, index: CellIndex) -> Cell {
-        let bitmask = 1 << (index.row() * (3 + 1) + index.column());
-        if bitmask & self.0 != 0 {
-            Cell::PlayerOne
-        } else if (bitmask << 16) & self.0 != 0 {
-            Cell::PlayerTwo
-        } else {
-            Cell::Empty
-        }
-    }
-
-    /// True if one player has 3 stones which are allignend horizontal, diagonal or vertical
-    fn victory(self) -> bool {
-        let (col, row) = (1, 3 + 1);
-        // horizontal or vertical or diagonal 1 or diagonal 2
-        0 != (self.0 & self.0 >> col & self.0 >> (2 * col))
-            | (self.0 & self.0 >> row & self.0 >> (2 * row))
-            | (self.0 & self.0 >> (col + row) & self.0 >> (2 * (col + row)))
-            | (self.0 & self.0 >> (row - col) & self.0 >> (2 * (row - col)))
-    }
-
-    fn stones(self) -> u8 {
-        self.0.count_ones() as u8
     }
 }
 
@@ -173,7 +117,7 @@ impl fmt::Display for Cell {
 
 /// Field are enumerated 0..=8. Top left is zero. Bottom right is 8.
 ///
-/// ```
+/// ```custom
 /// 0 1 2
 /// 3 4 5
 /// 6 7 8
@@ -184,7 +128,7 @@ pub struct CellIndex(u8);
 impl CellIndex {
     /// Create a new cell index from a number between 0 and 8. Panics for values >= 9.
     ///
-    /// ```
+    /// ```custom
     /// 0 1 2
     /// 3 4 5
     /// 6 7 8
@@ -271,12 +215,22 @@ mod test {
     }
 
     #[test]
-    fn victory_condition() {
-        let mut board = Bitboard::new();
-        assert!(!board.victory());
-        board.mark_cell(CellIndex(0), Cell::PlayerTwo);
-        board.mark_cell(CellIndex(4), Cell::PlayerTwo);
-        board.mark_cell(CellIndex(8), Cell::PlayerTwo);
-        assert!(board.victory());
+    fn victory_condition_player_two() {
+        // -------
+        // | | |X|
+        // |-----|
+        // | |X|X|
+        // |-----|
+        // |O|O|O|
+        // -------
+        let mut game = TicTacToe::new();
+        game.play_move(&CellIndex::new(4));
+        game.play_move(&CellIndex::new(6));
+        game.play_move(&CellIndex::new(2));
+        game.play_move(&CellIndex::new(8));
+        game.play_move(&CellIndex::new(5));
+        game.play_move(&CellIndex::new(7));
+
+        assert_eq!(game.state(), TicTacToeState::VictoryPlayerTwo);
     }
 }

@@ -182,11 +182,23 @@ impl fmt::Display for Cell {
 pub struct CellIndex(u8);
 
 impl CellIndex {
-    fn row(self) -> u8 {
+    /// Create a new cell index from a number between 0 and 8. Panics for values >= 9.
+    ///
+    /// ```
+    /// 0 1 2
+    /// 3 4 5
+    /// 6 7 8
+    /// ```
+    pub fn new(index: u8) -> CellIndex {
+        assert!(index < 9);
+        CellIndex(index)
+    }
+
+    pub fn row(self) -> u8 {
         self.0 / 3
     }
 
-    fn column(self) -> u8 {
+    pub fn column(self) -> u8 {
         self.0 % 3
     }
 }
